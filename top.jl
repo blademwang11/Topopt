@@ -1,4 +1,5 @@
 function top(nelx, nely, volfrac, penalMax, rmin)
+    # input: >> top(60,20,0.5,3,3)
     # Material properties
     E0 = 1
     Emin = 1e-9
@@ -53,11 +54,9 @@ function top(nelx, nely, volfrac, penalMax, rmin)
         penal = min(penalMax, penal+0.04)
         # FE-ANALYSIS
         sK = reshape(KE[:]*(Emin+xPhys[:]'.^penal*(E0-Emin)),64*nelx*nely,1)
-        #println(sK)
         K = sparse(vec(iK),vec(jK),vec(sK)); K = (K+K')/2
         # @time KK = cholfact(K[freedofs,freedofs]); U[freedofs] = KK \ F[freedofs]
         @time U[freedofs] = K[freedofs,freedofs] \ F[freedofs]
-        # println(U)
         # Objective function and sensitivity analysis
         ce = reshape(sum((U[edofMat]*KE).*U[edofMat],2),nely,nelx)
         c = sum(sum((Emin+xPhys.^penal*(E0-Emin)).*ce))
@@ -69,7 +68,6 @@ function top(nelx, nely, volfrac, penalMax, rmin)
         l1 = 0; l2 = 1e9; move = 0.2; xnew = 0
         while (l2-l1)/(l1+l2) > 1e-3
             lmid = 0.5*(l2+l1)
-            # println(x)
             xnew = max(0,max(x-move,min(1,min(x+move,x.*sqrt(-dc./dv/lmid)))))
             xPhys[:] = (H*xnew[:])./Hs
             if sum(xPhys[:]) > volfrac*nelx*nely
