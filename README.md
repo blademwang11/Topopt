@@ -11,3 +11,6 @@ To run the matlabe code, just download the top88.m code and run in MATLAB with:
 
 I write a Julia version of the code. You can run it:
 >> top(60,20,0.5,3,3)
+
+It means you are using finite element mesh 60x20. You can test bigger problem by input larger numbers. You can just keep
+other parameters there.
