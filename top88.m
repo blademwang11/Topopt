@@ -1,5 +1,6 @@
 %%%% AN 88 LINE TOPOLOGY OPTIMIZATION CODE Nov, 2010 %%%%
-function top88(nelx,nely,volfrac,penal,rmin,ft)
+function top88(nelx,nely,volfrac,penalMax,rmin)
+% input: >> top88(60,20,0.5,3,3)
 %% MATERIAL PROPERTIES
 E0 = 1;
 Emin = 1e-9;
@@ -51,7 +52,7 @@ change = 1;
 %% START ITERATION
 while change > 0.01
   loop = loop + 1;
-  penal = min(3, penal + 0.04);
+  penal = min(penalMax, penal + 0.04);
   %% FE-ANALYSIS
   sK = reshape(KE(:)*(Emin+xPhys(:)'.^penal*(E0-Emin)),64*nelx*nely,1);
   K = sparse(iK,jK,sK); K = (K+K')/2;
@@ -62,22 +63,14 @@ while change > 0.01
   dc = -penal*(E0-Emin)*xPhys.^(penal-1).*ce;
   dv = ones(nely,nelx);
   %% FILTERING/MODIFICATION OF SENSITIVITIES
-  if ft == 1
-    dc(:) = H*(x(:).*dc(:))./Hs./max(1e-3,x(:));
-  elseif ft == 2
-    dc(:) = H*(dc(:)./Hs);
-    dv(:) = H*(dv(:)./Hs);
-  end
+  dc(:) = H*(dc(:)./Hs);
+  dv(:) = H*(dv(:)./Hs);
   %% OPTIMALITY CRITERIA UPDATE OF DESIGN VARIABLES AND PHYSICAL DENSITIES
   l1 = 0; l2 = 1e9; move = 0.2;
   while (l2-l1)/(l1+l2) > 1e-3
     lmid = 0.5*(l2+l1);
     xnew = max(0,max(x-move,min(1,min(x+move,x.*sqrt(-dc./dv/lmid)))));
-    if ft == 1
-      xPhys = xnew;
-    elseif ft == 2
-      xPhys(:) = (H*xnew(:))./Hs;
-    end
+    xPhys(:) = (H*xnew(:))./Hs;
     if sum(xPhys(:)) > volfrac*nelx*nely, l1 = lmid; else l2 = lmid; end
   end
   change = max(abs(xnew(:)-x(:)));
@@ -86,7 +79,7 @@ while change > 0.01
   fprintf(' It.:%5i Obj.:%11.4f Vol.:%7.3f ch.:%7.3f\n',loop,c, ...
     mean(xPhys(:)),change);
   %% PLOT DENSITIES
-   colormap(gray); imagesc(1-xPhys); caxis([0 1]); axis equal; axis off; drawnow;
+   % colormap(gray); imagesc(1-xPhys); caxis([0 1]); axis equal; axis off; drawnow;
 end
 %
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
